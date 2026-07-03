@@ -60,6 +60,7 @@
     .order-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:6px}
     .cart-item{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:8px;border-bottom:1px dashed var(--border)}
     .cart-item:last-child{border-bottom:none}
+    .cart-item:last-child{border-bottom:none}
     .small{font-size:.85rem;color:var(--muted)}
     dialog{width:min(760px,92vw);background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:18px;padding:0}
     dialog::backdrop{background:rgba(0,0,0,.6)}
@@ -69,8 +70,11 @@
     .selector-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
     .select-card{border:1px solid var(--border);background:var(--card);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px}
     .select-title{font-weight:700}
-    .select-qty{display:grid;grid-template-columns:32px 1fr 32px;align-items:center;gap:8px}
-    .select-qty button{height:32px;border-radius:8px;border:1px solid var(--border);background:var(--bg)}
+    .select-qty{display:flex;align-items:center;gap:4px}
+    .select-qty button{width:28px;height:28px;flex:none;padding:0;border-radius:8px;border:1px solid var(--border);background:var(--bg)}
+    .select-qty output{width:20px;text-align:center;font-weight:700}
+    .select-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+    .select-controls .btn{padding:6px 10px;font-size:.8rem}
     .ing-list{display:grid;grid-template-columns:1fr auto;gap:8px}
   </style>
 </head>
@@ -253,12 +257,85 @@
       ],
       bundles: [
         {
-          id:'bd-coop',
-          name:'🌯 The Coop Wrap',
-          price:750,
+          id:'bd-sunrise',
+          name:'🌅 The Sunrise Chick',
+          price:650,
           type:'bundle',
           drinksIncluded:5,
-          description:'Includes 5 Chicken Wraps, 5 Fries, and 5 drinks of your choice.'
+          includedFood:[{id:'fd-eggs',qty:5},{id:'fd-fries',qty:5}],
+          description:'Includes 5 Cheesy Scrambled Eggs, 5 Fries, and 5 drinks of your choice.'
+        },
+        {
+          id:'bd-littlecoop',
+          name:'🐓 The Little Coop',
+          price:700,
+          type:'bundle',
+          drinksIncluded:5,
+          includedFood:[{id:'fd-sandwich',qty:5},{id:'fd-fries',qty:5}],
+          description:'Includes 5 Fried Chicken Sandwiches, 5 Fries, and 5 drinks of your choice.'
+        },
+        {
+          id:'bd-blazing',
+          name:'🔥 The Blazing Chick',
+          price:700,
+          type:'bundle',
+          drinksIncluded:5,
+          includedFood:[{id:'fd-wings',qty:5},{id:'fd-fries',qty:5}],
+          description:'Includes 5 Hot Wings, 5 Fries, and 5 drinks of your choice.'
+        },
+        {
+          id:'bd-roost',
+          name:'🍗 The Roost Feast',
+          price:700,
+          type:'bundle',
+          drinksIncluded:10,
+          includedFood:[{id:'fd-nugget',qty:10},{id:'fd-fries',qty:10}],
+          description:'Includes 10 Chicken Nuggets, 10 Fries, and 10 drinks of your choice.'
+        },
+        {
+          id:'bd-barn',
+          name:'🧺 The Barn Basket',
+          price:700,
+          type:'bundle',
+          drinksIncluded:10,
+          includedFood:[{id:'fd-tender',qty:10},{id:'fd-fries',qty:10}],
+          description:'Includes 10 Chicken Tenders, 10 Fries, and 10 drinks of your choice.'
+        },
+        {
+          id:'bd-wrapfeast',
+          name:'🌯 The Hen House Wrap Feast',
+          price:1150,
+          type:'bundle',
+          drinksIncluded:10,
+          includedFood:[{id:'fd-wrap',qty:10},{id:'fd-fries',qty:10}],
+          description:'Includes 10 Chicken Wraps, 10 Fries, and 10 drinks of your choice.'
+        },
+        {
+          id:'bd-farmers',
+          name:"🍳 The Farmer's Breakfast",
+          price:750,
+          type:'bundle',
+          drinksIncluded:10,
+          includedFood:[{id:'fd-eggs',qty:10},{id:'fd-fries',qty:10}],
+          description:'Includes 10 Cheesy Scrambled Eggs, 10 Fries, and 10 drinks of your choice.'
+        },
+        {
+          id:'bd-bigcluck',
+          name:'🥪 The Big Cluck',
+          price:850,
+          type:'bundle',
+          drinksIncluded:10,
+          includedFood:[{id:'fd-sandwich',qty:10},{id:'fd-fries',qty:10}],
+          description:'Includes 10 Fried Chicken Sandwiches, 10 Fries, and 10 drinks of your choice.'
+        },
+        {
+          id:'bd-inferno',
+          name:'🌶️ The Rooster Inferno',
+          price:850,
+          type:'bundle',
+          drinksIncluded:10,
+          includedFood:[{id:'fd-wings',qty:10},{id:'fd-fries',qty:10}],
+          description:'Includes 10 Hot Wings, 10 Fries, and 10 drinks of your choice.'
         },
       ],
       extras: [
@@ -336,11 +413,6 @@
           <h3>${item.name}</h3>
           <div class="toolrow" style="justify-content:space-between;">
             <span class="price">${currency(item.price)}</span>
-            <div class="qty">
-              <button aria-label="decrease">−</button>
-              <output>1</output>
-              <button aria-label="increase">+</button>
-            </div>
           </div>
           ${needsCombo?`<button class="btn" data-wizard="${item.id}">Choose &amp; Add</button>`:`<button class="btn" data-add="${item.id}">Add to Order</button>`}
         </article>`;
@@ -353,21 +425,16 @@
 
       const make = arr => arr.map(cardHTML).join('');
       classic.innerHTML = make(MENU.classic);
-      mealBundles.innerHTML = make(MENU.bundles.filter(i=>i.id==='bd-coop'));
+      mealBundles.innerHTML = make(MENU.bundles);
       extras.innerHTML  = make(MENU.extras);
 
       const allItems = [...MENU.classic,...MENU.bundles,...MENU.extras];
 
       document.querySelectorAll('.cards .card').forEach(card=>{
-        let count=1;
-        const out=card.querySelector('output');
-        card.querySelector('button[aria-label="decrease"]')?.addEventListener('click',()=>{count=Math.max(1,count-1);out.value=count;});
-        card.querySelector('button[aria-label="increase"]')?.addEventListener('click',()=>{count++;out.value=count;});
-
         const wizId = card.querySelector('[data-wizard]')?.getAttribute('data-wizard');
         if(wizId){
           const item = allItems.find(i=>i.id===wizId);
-          card.querySelector('[data-wizard]').addEventListener('click',()=>openComboWizard(item,count));
+          card.querySelector('[data-wizard]').addEventListener('click',()=>openComboWizard(item,1));
           return;
         }
 
@@ -375,7 +442,7 @@
         if(addId){
           const item = allItems.find(i=>i.id===addId);
           card.querySelector('[data-add]').addEventListener('click',()=>{
-            addToCart({ id:item.id, name:item.name, unitPrice:item.price, qty:count, type:item.type });
+            addToCart({ id:item.id, name:item.name, unitPrice:item.price, qty:1, type:item.type });
           });
         }
       });
@@ -385,16 +452,19 @@
     function renderCart(){
       const cart = document.getElementById('cart');
       if(!state.cart.length){
+        cart.style.display='';
+        cart.style.flexDirection='';
+        cart.style.gap='';
         cart.innerHTML = `<div class="cart-item muted">Your order is empty. Add a drink or bake to get started.</div>`;
         return;
       }
 
-      const itemRow = (l, idx) => {
+      const itemRow = (l, idx, isLast) => {
         const nameSize = l.isChild ? '1rem' : '1.15rem';
         const priceSize = l.isChild ? '0.95rem' : '1.05rem';
         const editBtn = l.isChild ? '' : `<button class="btn ghost" data-edit="${idx}" style="padding:4px 10px;font-size:0.85rem;margin-top:4px;">Edit</button>`;
         return `
-        <div class="cart-item">
+        <div class="cart-item" style="padding:8px 4px;${isLast?'border-bottom:none;':''}">
           <div style="flex:1;">
             <div style="font-size:${nameSize};"><strong>${l.name}</strong></div>
             ${editBtn}
@@ -414,9 +484,13 @@
         groups.push({ groupId:l.groupId||null, rows:[{l,idx}] });
       });
 
+      cart.style.display='flex';
+      cart.style.flexDirection='column';
+      cart.style.gap='12px';
+
       cart.innerHTML = groups.map(g=>`
-        <div style="border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:12px;background:var(--bg);">
-          ${g.rows.map(({l,idx})=>itemRow(l,idx)).join('')}
+        <div style="border:1px solid var(--border);border-radius:12px;padding:12px;background:var(--bg);">
+          ${g.rows.map(({l,idx},i)=>itemRow(l,idx,i===g.rows.length-1)).join('')}
         </div>
       `).join('');
 
@@ -532,12 +606,12 @@
             ${pool.map(p=>`
               <div class="select-card" data-id="${p.id}">
                 <div class="select-title">${p.name}</div>
-                <div class="select-qty">
-                  <button data-minus="${p.id}">−</button>
-                  <output data-out="${p.id}">${counts[p.id]||0}</output>
-                  <button data-plus="${p.id}">+</button>
-                </div>
-                <div class="toolrow" style="gap:6px; margin-top:6px;">
+                <div class="select-controls">
+                  <div class="select-qty">
+                    <button data-minus="${p.id}">−</button>
+                    <output data-out="${p.id}">${counts[p.id]||0}</output>
+                    <button data-plus="${p.id}">+</button>
+                  </div>
                   <button class="btn" data-half="${p.id}">Half</button>
                   <button class="btn" data-max="${p.id}">Max</button>
                 </div>
@@ -592,10 +666,12 @@
         comboTitle.textContent=item.name||'Confirm Selection';
         const fmt=id=>(findMenuItem(id)||{}).name||id;
         const drinkParts=Object.entries(counts).filter(([,c])=>c>0).map(([id,c])=>`${fmt(id)} x${c}`);
+        const foodParts=(item.includedFood||[]).map(f=>`${fmt(f.id)} x${f.qty*(qty||1)}`);
         const info=(findMenuItem(item.id)?.description)||'';
         comboSteps.innerHTML='1. Drinks · <strong>2. Confirm</strong>';
         comboContent.innerHTML = `
           <div class="summary" style="gap:10px;">
+            ${foodParts.length?`<div><strong>Food:</strong> ${foodParts.join(', ')}</div>`:''}
             ${drinkParts.length?`<div><strong>Drinks:</strong> ${drinkParts.join(', ')}</div>`:''}
             ${info?`<div class="small muted">${info}</div>`:''}
           </div>`;
@@ -626,9 +702,11 @@
             addToCart({ id, name:`${nm}`, unitPrice:0, qty:c*(qty||1), type:'drink', meta:item.name, groupId, isChild:true });
           }
         });
-        if(item.id==='bd-coop'){
-          addToCart({ id:'fd-wrap', name:'🌯 Chicken Wrap', unitPrice:0, qty:5*(qty||1), type:'extra', meta:'Coop Wrap', groupId, isChild:true });
-          addToCart({ id:'fd-fries', name:'🍟 Fries', unitPrice:0, qty:5*(qty||1), type:'extra', meta:'Coop Wrap', groupId, isChild:true });
+        if(Array.isArray(item.includedFood)){
+          item.includedFood.forEach(f=>{
+            const fi = findMenuItem(f.id);
+            addToCart({ id:f.id, name:fi?fi.name:f.id, unitPrice:0, qty:f.qty*(qty||1), type:'extra', meta:item.name, groupId, isChild:true });
+          });
         }
 
         comboModal.close();
