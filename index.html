@@ -132,8 +132,8 @@
           </div>
         </div>
 
-        <div style="padding:16px; border-top:1px solid var(--border);">
-          <button type="button" class="btn block" id="openRecipeBtn">📖 Recipe</button>
+        <div style="padding:16px; border-top:1px solid var(--border); display:flex; gap:10px;">
+          <button type="button" class="btn block" id="openRecipeBtn" style="flex:1;">📖 Recipe</button>
         </div>
       </aside>
 
@@ -147,9 +147,9 @@
                 <button type="button" class="btn fulfill-btn" data-fulfill="delivery" style="flex:1;">Delivery</button>
               </div>
               <div id="zoneButtons" style="display:none; gap:10px; width:100%;">
-                <button type="button" class="btn zone-btn" data-zone="city" style="flex:1;">City $50</button>
+                <button type="button" class="btn zone-btn" data-zone="city" style="flex:1;">City $150</button>
                 <button type="button" class="btn zone-btn" data-zone="sandy" style="flex:1;">Sandy $100</button>
-                <button type="button" class="btn zone-btn" data-zone="paleto" style="flex:1;">Paleto $150</button>
+                <button type="button" class="btn zone-btn" data-zone="paleto" style="flex:1;">Paleto $50</button>
               </div>
             </div>
           </div>
@@ -185,6 +185,7 @@
             <div id="ingredientList" class="order-card" style="padding:12px;">
               <div class="muted">No ingredients yet. Add items to the cart.</div>
             </div>
+            <button type="button" class="btn block" id="openPrepBtn" style="margin-top:10px;">🧾 Prep Sheet</button>
           </div>
         </div>
       </section>
@@ -223,6 +224,27 @@
     </div>
     <div class="modal-body">
       <div id="recipeList"></div>
+    </div>
+  </dialog>
+
+  <dialog id="prepModal">
+    <div class="modal-header">
+      <strong>🧾 Prep Sheet</strong>
+      <button class="btn" id="closePrep" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <h3 style="margin:0 0 8px 0;">Items Needed</h3>
+        <div id="prepItems" class="order-card" style="padding:12px;"></div>
+      </div>
+      <div>
+        <h3 style="margin:0 0 8px 0;">Ingredients Needed</h3>
+        <div id="prepIngredients" class="order-card" style="padding:12px;"></div>
+      </div>
+      <div>
+        <h3 style="margin:0 0 8px 0;">Recipes Needed</h3>
+        <div id="prepRecipes"></div>
+      </div>
     </div>
   </dialog>
 
@@ -539,7 +561,7 @@
       persist(); renderCart(); renderTotals(); renderIngredients();
     }
 
-    const ZONE_FEES = { city:50, sandy:100, paleto:150 };
+    const ZONE_FEES = { city:150, sandy:100, paleto:50 };
     // ---------- Fulfillment (pickup / delivery) ----------
     function renderFulfillment(){
       document.querySelectorAll('.fulfill-btn').forEach(b=> b.setAttribute('aria-pressed', String(b.dataset.fulfill===state.fulfillment)));
@@ -765,6 +787,63 @@
     }
     document.getElementById('openRecipeBtn').addEventListener('click',()=>{ renderRecipe(); document.getElementById('recipeModal').showModal(); });
     document.getElementById('closeRecipe').addEventListener('click',()=>document.getElementById('recipeModal').close());
+
+    // ---------- Prep sheet (items, ingredients & recipes needed for the current order) ----------
+    function aggregateItemsNeeded(){
+      const tally={};
+      state.cart.forEach(line=>{
+        if(line.type==='bundle') return; // the bundle wrapper itself isn't a prep item; its contents already appear as child lines
+        if(!tally[line.id]) tally[line.id] = { name:line.name, qty:0 };
+        tally[line.id].qty += line.qty;
+      });
+      return tally;
+    }
+
+    function renderPrepSheet(){
+      const itemsWrap = document.getElementById('prepItems');
+      const ingredientsWrap = document.getElementById('prepIngredients');
+      const recipesWrap = document.getElementById('prepRecipes');
+
+      if(!state.cart.length){
+        itemsWrap.innerHTML = '<div class="muted">Your order is empty. Add items to see what\'s needed.</div>';
+        ingredientsWrap.innerHTML = '<div class="muted">No ingredients yet.</div>';
+        recipesWrap.style.cssText='';
+        recipesWrap.innerHTML = '<div class="muted">No recipes needed yet.</div>';
+        return;
+      }
+
+      const itemsTally = aggregateItemsNeeded();
+      const itemEntries = Object.values(itemsTally).sort((a,b)=>a.name.localeCompare(b.name));
+      itemsWrap.innerHTML = itemEntries.length
+        ? itemEntries.map(({name,qty})=>`<div class="ing-list"><div>${name}</div><div><strong>x${qty}</strong></div></div>`).join('')
+        : '<div class="muted">No items needed.</div>';
+
+      const ingredientEntries = Object.entries(aggregateIngredients()).sort((a,b)=>a[0].localeCompare(b[0]));
+      ingredientsWrap.innerHTML = ingredientEntries.length
+        ? ingredientEntries.map(([n,c])=>`<div class="ing-list"><div>${n}</div><div><strong>x${c}</strong></div></div>`).join('')
+        : '<div class="muted">No ingredients needed.</div>';
+
+      const recipeIds = Object.keys(itemsTally).filter(id=>RECIPE_MAP[id]).sort();
+      if(!recipeIds.length){
+        recipesWrap.style.cssText='';
+        recipesWrap.innerHTML = '<div class="muted">No recipes needed for this order.</div>';
+      } else {
+        recipesWrap.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;';
+        recipesWrap.innerHTML = recipeIds.map(id=>{
+          const item=findMenuItem(id);
+          const name=item?item.name:id;
+          const yieldQty=YIELD_MAP[id]||1;
+          const needed=itemsTally[id].qty;
+          const ingredients=Object.entries(RECIPE_MAP[id]).map(([ing,qty])=>`<li>${ing} × ${qty*needed}</li>`).join('');
+          return `<div class="order-card" style="padding:12px;">
+            <strong>${name}</strong> <span class="small muted">— Need ${needed} (makes ${yieldQty} per batch)</span>
+            <ul style="margin:6px 0 0 16px;">${ingredients}</ul>
+          </div>`;
+        }).join('');
+      }
+    }
+    document.getElementById('openPrepBtn').addEventListener('click',()=>{ renderPrepSheet(); document.getElementById('prepModal').showModal(); });
+    document.getElementById('closePrep').addEventListener('click',()=>document.getElementById('prepModal').close());
 
     // ---------- Render-all / Checkout / Reset ----------
     function renderAll(){ renderCards(); renderCart(); renderFulfillment(); renderTotals(); renderDiscount(); renderIngredients(); }
